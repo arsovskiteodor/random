@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A Letter For You</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: #1a0a0f;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      color: #f5e6e8;
+    }
+
+    /* ── Floating particles ── */
+    .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .particle {
+      position: absolute;
+      width: 4px; height: 4px;
+      background: #e8a0a8;
+      border-radius: 50%;
+      opacity: 0;
+      animation: float var(--dur, 8s) var(--delay, 0s) infinite ease-in-out;
+    }
+    @keyframes float {
+      0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+      10%  { opacity: 0.6; }
+      90%  { opacity: 0.4; }
+      100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+    }
+
+    /* ── Main stage ── */
+    #stage {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      width: 100%;
+      max-width: 940px;
+    }
+
+    /* ── Envelope scene ── */
+    #envelope-scene {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    #envelope-scene h1 {
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      color: #f0c8d0;
+      letter-spacing: 2px;
+      font-style: italic;
+      text-shadow: 0 0 30px rgba(232, 160, 168, 0.5);
+    }
+
+    #envelope-scene p {
+      color: #c8a0a8;
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+    }
+
+    /* The envelope */
+    .envelope {
+      width: 280px;
+      height: 180px;
+      position: relative;
+      filter: drop-shadow(0 8px 32px rgba(232, 80, 100, 0.35));
+      transition: transform 0.2s;
+    }
+    .envelope:hover { transform: scale(1.04) rotate(-1deg); }
+
+    .env-body {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(145deg, #8b1a2a, #5c0e18);
+      border-radius: 4px 4px 8px 8px;
+      position: absolute;
+      bottom: 0;
+    }
+
+    .env-flap {
+      width: 0;
+      height: 0;
+      border-left: 140px solid transparent;
+      border-right: 140px solid transparent;
+      border-top: 90px solid #a02035;
+      position: absolute;
+      top: 0;
+      transform-origin: top center;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 2;
+    }
+    .env-flap.open { transform: rotateX(180deg); }
+
+    .env-left {
+      width: 0; height: 0;
+      border-left: 140px solid #7a1525;
+      border-top: 90px solid transparent;
+      border-bottom: 90px solid transparent;
+      position: absolute;
+      top: 0; left: 0;
+    }
+    .env-right {
+      width: 0; height: 0;
+      border-right: 140px solid #7a1525;
+      border-top: 90px solid transparent;
+      border-bottom: 90px solid transparent;
+      position: absolute;
+      top: 0; right: 0;
+    }
+    .env-bottom {
+      width: 0; height: 0;
+      border-left: 140px solid transparent;
+      border-right: 140px solid transparent;
+      border-bottom: 90px solid #901a2a;
+      position: absolute;
+      bottom: 0;
+    }
+
+    .env-heart {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2rem;
+      z-index: 3;
+      animation: heartbeat 1.4s ease-in-out infinite;
+    }
+    @keyframes heartbeat {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50%       { transform: translate(-50%, -50%) scale(1.15); }
+    }
+
+    /* ── Letter ── */
+    #letter {
+      display: none;
+      flex-direction: column;
+      gap: 32px;
+      width: 100%;
+      animation: fadeUp 0.8s ease forwards;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .paper {
+      background: linear-gradient(160deg, #fff9f5, #fdf0f2);
+      border-radius: 12px;
+      padding: 40px 44px;
+      box-shadow: 0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.8);
+      color: #2a1018;
+      position: relative;
+      overflow: hidden;
+    }
+    .paper::before {
+      content: '';
+      position: absolute;
+      left: 60px; top: 0; bottom: 0;
+      width: 1px;
+      background: rgba(220, 150, 160, 0.35);
+    }
+
+    .paper-lines {
+      background-image: repeating-linear-gradient(
+        transparent, transparent 31px, rgba(200, 160, 170, 0.2) 31px, rgba(200, 160, 170, 0.2) 32px
+      );
+    }
+
+    .date-line {
+      text-align: right;
+      color: #9a5060;
+      font-style: italic;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .salutation {
+      font-size: 1.25rem;
+      font-style: italic;
+      color: #7a1530;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+
+    .letter-body {
+      line-height: 2;          /* matches lined paper */
+      font-size: 1.05rem;
+      color: #2a1018;
+      white-space: pre-wrap;
+    }
+
+    .letter-body .placeholder {
+      color: #c87080;
+      font-style: italic;
+      opacity: 0.7;
+    }
+
+    .sign-off {
+      margin-top: 28px;
+      text-align: right;
+      font-style: italic;
+    }
+    .sign-off .closing { color: #9a3040; font-size: 1rem; }
+    .sign-off .name    { color: #7a1530; font-size: 1.2rem; font-weight: bold; margin-top: 6px; }
+
+    /* ── Section titles ── */
+    .section-title {
+      text-align: center;
+      color: #e0a0a8;
+      font-size: 1rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: -16px;
+    }
+
+    /* ── Photo grid ── */
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px;
+    }
+
+    .photo-card {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      aspect-ratio: 4/3;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+      transition: transform 0.2s;
+    }
+    .photo-card:hover { transform: scale(1.03) rotate(0.5deg); }
+
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* The veil that covers each photo */
+    .photo-veil {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #3d0d1a, #1a0a0f);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: opacity 0.7s ease;
+      z-index: 2;
+    }
+    .photo-veil.revealed { opacity: 0; pointer-events: none; }
+
+    .photo-veil .lock-icon { font-size: 2rem; }
+    .photo-veil .reveal-hint {
+      font-size: 0.78rem;
+      letter-spacing: 2px;
+      color: #c87080;
+      text-transform: uppercase;
+    }
+
+    .photo-caption {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(30, 5, 10, 0.85));
+      padding: 20px 12px 10px;
+      font-style: italic;
+      font-size: 0.85rem;
+      color: #f5d0d8;
+      text-align: center;
+      z-index: 3;
+      transform: translateY(100%);
+      transition: transform 0.5s 0.4s ease;
+    }
+    .photo-card.revealed .photo-caption { transform: translateY(0); }
+
+    /* ── Closing banner ── */
+    .closing-banner {
+      text-align: center;
+      padding: 32px 20px;
+    }
+    .closing-banner .big-heart {
+      font-size: 3rem;
+      animation: heartbeat 1.4s ease-in-out infinite;
+      display: block;
+      margin-bottom: 14px;
+    }
+    .closing-banner p {
+      color: #e0b0b8;
+      font-style: italic;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+    }
+
+    /* ── Letter row layout ── */
+    .letter-row {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      width: 100%;
+    }
+
+    .letter-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      min-width: 0;
+    }
+
+    .letter-side-photos {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      flex-shrink: 0;
+      align-self: center;
+      width: 210px;
+    }
+
+    .letter-side-photos .photo-card { width: 170px; }
+    .letter-side-photos .photo-veil .lock-icon   { font-size: 1.4rem; }
+    .letter-side-photos .photo-veil .reveal-hint { font-size: 0.62rem; letter-spacing: 1px; }
+
+    /* Zigzag scatter — alternate inward/outward within each column */
+    .side-left  .float-wrap:nth-child(1) { align-self: flex-end; }
+    .side-left  .float-wrap:nth-child(2) { align-self: flex-start; }
+    .side-right .float-wrap:nth-child(1) { align-self: flex-start; }
+    .side-right .float-wrap:nth-child(2) { align-self: flex-end; }
+
+    @keyframes bounceA {
+      0%, 100% { transform: translateY(0)    rotate(-5deg); }
+      50%       { transform: translateY(-12px) rotate(-5deg); }
+    }
+    @keyframes bounceB {
+      0%, 100% { transform: translateY(0)    rotate(4deg); }
+      50%       { transform: translateY(-12px) rotate(4deg); }
+    }
+    @keyframes bounceC {
+      0%, 100% { transform: translateY(0)    rotate(3deg); }
+      50%       { transform: translateY(-12px) rotate(3deg); }
+    }
+    @keyframes bounceD {
+      0%, 100% { transform: translateY(0)    rotate(-4deg); }
+      50%       { transform: translateY(-12px) rotate(-4deg); }
+    }
+
+    .side-left  .float-wrap:nth-child(1) { animation: bounceA 3s   0s    ease-in-out infinite; }
+    .side-left  .float-wrap:nth-child(2) { animation: bounceB 3.3s 0.8s  ease-in-out infinite; }
+    .side-right .float-wrap:nth-child(1) { animation: bounceC 2.9s 0.4s  ease-in-out infinite; }
+    .side-right .float-wrap:nth-child(2) { animation: bounceD 3.5s 1.1s  ease-in-out infinite; }
+
+    @media (max-width: 680px) {
+      .letter-side-photos { display: none; }
+    }
+
+    @media (max-width: 500px) {
+      .paper { padding: 28px 20px; }
+      .paper::before { left: 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Floating particles -->
+<div class="particles" id="particles"></div>
+
+<div id="stage">
+
+  <!-- ════════════════════════════════
+       ENVELOPE SCENE (shown first)
+       ════════════════════════════════ -->
+  <div id="envelope-scene">
+    <h1>Something is waiting for you…</h1>
+
+    <div class="envelope" id="envelope">
+      <div class="env-flap" id="env-flap"></div>
+      <div class="env-left"></div>
+      <div class="env-right"></div>
+      <div class="env-bottom"></div>
+      <div class="env-body"></div>
+      <div class="env-heart">💌</div>
+    </div>
+
+    <p>tap the envelope to open your surprise</p>
+  </div>
+
+
+  <!-- ════════════════════════════════
+       LETTER (revealed after open)
+       ════════════════════════════════ -->
+  <div id="letter">
+    <div class="letter-row">
+
+      <!-- ════ Left floating photos (1 & 2) ════ -->
+      <div class="letter-side-photos side-left">
+        <div class="float-wrap">
+          <div class="photo-card" onclick="revealPhoto(this)">
+            <img src="WhatsApp%20Image%202026-06-09%20at%2010.04.26%20PM.jpeg" alt="memory" />
+            <div class="photo-veil">
+              <span class="lock-icon">🔒</span>
+              <span class="reveal-hint">tap to reveal</span>
+            </div>
+          </div>
+        </div>
+        <div class="float-wrap">
+          <div class="photo-card" onclick="revealPhoto(this)">
+            <img src="WhatsApp%20Image%202026-06-09%20at%2010.04.27%20PM.jpeg" alt="memory" />
+            <div class="photo-veil">
+              <span class="lock-icon">🔒</span>
+              <span class="reveal-hint">tap to reveal</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ Center: letter + closing ════ -->
+      <div class="letter-center">
+
+        <!-- ── The paper letter ── -->
+        <div class="paper paper-lines">
+
+          <!-- ══════════════════════════════════════════════════════
+               CUSTOMISE: Change the date shown on the letter
+               ══════════════════════════════════════════════════════ -->
+          <div class="date-line">June 2026</div>
+
+          <!-- ══════════════════════════════════════════════════════
+               CUSTOMISE: The opening line (e.g. "My love," / "Hey you,")
+               ══════════════════════════════════════════════════════ -->
+          <div class="salutation">My bebche,</div>
+
+          <!-- ══════════════════════════════════════════════════════════════════════
+               ✏️  YOUR LETTER GOES HERE
+               Replace everything between the <p class="letter-body"> tags.
+               Keep the <p> tags. You can use line breaks freely.
+               ══════════════════════════════════════════════════════════════════════ -->
+          <p class="letter-body"><span class="placeholder">Loving you is the easiest thing I have done. I know that these past few days have not been the best, but just know that I care about you. Whenever you are felling low, I want you to know that you are loved and appreciated. I miss you bebchence and I can't wait to hug you when I come back. I love you my bebchence and wish that you were here with me right now.</span></p>
+
+          <div class="sign-off">
+            <!-- ══════════════════════════════════════════════════════
+                 CUSTOMISE: Closing words and your name
+                 ══════════════════════════════════════════════════════ -->
+            <div class="closing">Forever yours,</div>
+            <div class="name">Teo</div>
+          </div>
+        </div>
+
+        <!-- ── Closing banner ── -->
+        <div class="closing-banner">
+          <span class="big-heart">❤️</span>
+          <!-- ══════════════════════════════════════════════════════
+               CUSTOMISE: The final line at the bottom
+               ══════════════════════════════════════════════════════ -->
+          <p>No distance is too far when the heart knows where home is.</p>
+        </div>
+
+      </div><!-- /letter-center -->
+
+      <!-- ════ Right floating photos (3 & 4) ════ -->
+      <div class="letter-side-photos side-right">
+        <div class="float-wrap">
+          <div class="photo-card" onclick="revealPhoto(this)">
+            <img src="WhatsApp%20Image%202026-06-09%20at%2010.04.27%20PM%20%281%29.jpeg" alt="memory" />
+            <div class="photo-veil">
+              <span class="lock-icon">🔒</span>
+              <span class="reveal-hint">tap to reveal</span>
+            </div>
+          </div>
+        </div>
+        <div class="float-wrap">
+          <div class="photo-card" onclick="revealPhoto(this)">
+            <img src="WhatsApp%20Image%202026-06-09%20at%2010.04.27%20PM%20%282%29.jpeg" alt="memory" />
+            <div class="photo-veil">
+              <span class="lock-icon">🔒</span>
+              <span class="reveal-hint">tap to reveal</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /letter-row -->
+  </div><!-- /letter -->
+
+</div><!-- /stage -->
+
+<script>
+  /* ── particles ── */
+  const pc = document.getElementById('particles');
+  for (let i = 0; i < 28; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `left:${Math.random()*100}%;--dur:${6+Math.random()*10}s;--delay:${Math.random()*10}s;width:${2+Math.random()*5}px;height:${2+Math.random()*5}px;`;
+    pc.appendChild(p);
+  }
+
+  /* ── envelope open ── */
+  document.getElementById('envelope').addEventListener('click', openEnvelope);
+
+  function openEnvelope() {
+    document.getElementById('env-flap').classList.add('open');
+    setTimeout(() => {
+      document.getElementById('envelope-scene').style.display = 'none';
+      const letter = document.getElementById('letter');
+      letter.style.display = 'flex';
+    }, 700);
+  }
+
+  /* ── photo reveal ── */
+  function revealPhoto(card) {
+    const veil = card.querySelector('.photo-veil');
+    veil.classList.add('revealed');
+    card.classList.add('revealed');
+  }
+</script>
+</body>
+</html>
